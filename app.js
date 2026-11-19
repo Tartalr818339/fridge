@@ -1,4 +1,4 @@
-/* 鲜知 FreshSense — 交互逻辑（无构建步骤，原生 ES） */
+/* 鲜知 FreshSense — 手机 App 交互逻辑（无构建步骤，原生 ES） */
 (function () {
   'use strict';
 
@@ -6,7 +6,6 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-  const screenEl = $('#screen-content');
   const appEl = $('#app-content');
   const tabEl = $('#app-tabbar');
   const modalRoot = $('#modal-root');
@@ -19,218 +18,6 @@
     setTimeout(() => t.remove(), 2200);
   }
 
-  /* ==================== 冰箱屏幕端 ==================== */
-  function renderScreen() {
-    $$('[data-screen-view]').forEach(b => b.classList.toggle('active', b.dataset.screenView === STATE.screenView));
-    $('#screen-mode-badge').textContent = ({
-      main: '主界面', pairing: '配对流程', expiry: '临期弹窗', nfc: 'NFC 感应区', layer: '层详情'
-    })[STATE.screenView];
-    if (STATE.screenView === 'main') screenEl.innerHTML = screenMain();
-    else if (STATE.screenView === 'pairing') screenEl.innerHTML = screenPairing();
-    else if (STATE.screenView === 'expiry') screenEl.innerHTML = screenMain() + screenExpiryModal();
-    else if (STATE.screenView === 'nfc') screenEl.innerHTML = screenNfc();
-    else if (STATE.screenView === 'layer') screenEl.innerHTML = screenMain() + screenLayerModal();
-  }
-
-  // 优先级：临期1天/过期 > 临期2天 > 新鲜；同类按剩余天数升序
-  function priorityItems() {
-    const rank = { red: 0, yellow: 1, green: 2 };
-    return ITEMS.slice().sort((a, b) => (rank[a.freshness] - rank[b.freshness]) || (a.remainingDays - b.remainingDays));
-  }
-
-  // 单个食材卡片：严格按参考图——大图 + 名称 + 购买时间 + 保质期至 + 剩余天数 + 进度条 + 状态
-  function foodCard(i) {
-    const f = i.freshness;
-    const badge = i.remainingDays <= 1 ? '<span class="fc-badge red">⚠ 仅剩 1 天</span>'
-      : i.remainingDays === 2 ? '<span class="fc-badge yellow">⏰ 临期 2 天</span>' : '';
-    const statusLabel = f === 'green' ? '新鲜' : f === 'yellow' ? '临期' : '过期';
-    return `<div class="food-card ${f}">
-      ${badge}
-      <div class="fc-photo"><span class="fc-emoji">${i.icon}</span></div>
-      <div class="fc-name">${esc(i.name)}</div>
-      <div class="fc-sep"></div>
-      <div class="fc-meta"><span class="fc-ico">📅</span>购买时间 <b>${esc(i.purchaseDate)}</b></div>
-      <div class="fc-meta"><span class="fc-ico">🛡</span>保质期至 <b>${esc(i.expiryDate)}</b></div>
-      <div class="fc-days ${f}"><span class="fc-ico">⏱</span>剩余 <b>${i.remainingDays}</b> 天</div>
-      <div class="fc-bar"><span style="width:${i.freshPct}%;background:${FRESHNESS[f].color}"></span></div>
-      <div class="fc-status ${f}">${statusLabel}</div>
-    </div>`;
-  }
-
-  function screenMain() {
-    const sorted = priorityItems();
-    const urgentCount = ITEMS.filter(i => i.remainingDays <= 2).length;
-
-    return `<div class="screen-head">
-        <div class="sh-left">
-          <span class="sh-logo"><img src="./assets/logo.svg?v=5" alt="鲜知" /></span>
-          <div><h3>冰箱食材</h3><p>食材新鲜，健康每一天</p></div>
-        </div>
-        <div class="sh-right">
-          <span class="sh-alert">🔔 需处理 ${urgentCount}</span>
-          <span class="sh-manage">🍃 食材管理 ›</span>
-        </div>
-      </div>
-      <div class="screen-split">
-        <div class="food-panel">
-          <div class="food-panel-head">
-            <h4>食材清单 <span class="fph-badge">按紧急度排序</span></h4>
-            <span class="fph-hint">临期优先展示 · 共 ${ITEMS.length} 件</span>
-          </div>
-          <div class="food-grid">${sorted.map(foodCard).join('')}</div>
-        </div>
-        <div class="fridge-panel">
-          <div class="fridge-tip">👆 点击冰箱区域，查看该层食材详情</div>
-          ${fridgeIllustration()}
-        </div>
-      </div>
-      <div class="screen-legend">
-        <span><i style="background:var(--green)"></i>绿=新鲜</span>
-        <span><i style="background:var(--yellow)"></i>黄=临期 2 天</span>
-        <span><i style="background:var(--red)"></i>红=临期 1 天/过期</span>
-        <span style="margin-left:auto">剩余天数由屏幕端同源给出</span>
-      </div>
-      <div class="nfc-zone">NFC<br>感应区</div>`;
-  }
-
-  // 饱满的冰箱图例：冷冻室 + 冷藏四层 + 门架储藏，均可点击查看
-  function fridgeIllustration() {
-    const layerIcons = ['🍞🥣🍦', '🥚🥛🧀', '🐟🧈🥩', '🥦🍅🍇'];
-    const layers = LAYERS.map((layer, idx) => {
-      const items = ITEMS.filter(i => i.layer === layer);
-      const warning = items.some(i => i.remainingDays <= 2);
-      return `<button class="fr-shelf ${warning ? 'has-warning' : ''}" data-action="open-layer" data-layer="${esc(layer)}">
-        <span class="fr-shelf-bar"></span>
-        <span class="fr-shelf-label">${esc(layer)}</span>
-        <span class="fr-shelf-icons">${layerIcons[idx]}</span>
-        <span class="fr-shelf-count">${items.length}件</span>
-        ${warning ? '<span class="fr-dot"></span>' : ''}
-      </button>`;
-    }).join('');
-
-    // 门架上的物品（装饰，点击显示提示）
-    const doorRacks = [
-      ['🥤', '🧃', '🫙'],
-      ['🍯', '🧂', '🥫']
-    ].map((rack, r) => `<div class="fr-door-rack">${rack.map(e => `<span>${e}</span>`).join('')}<i class="fr-rack-line"></i></div>`).join('');
-
-    return `<div class="fridge">
-      <div class="fridge-freezer">
-        <div class="fr-fz-head"><span>❄️ 冷冻室</span><span>−18℃ 以下</span></div>
-        <div class="fr-fz-body">
-          <button class="fr-drawer" data-action="open-layer" data-layer="${LAYERS[2]}"><span>🥩</span><span>肉类海鲜</span></button>
-          <button class="fr-drawer" data-action="open-layer" data-layer="${LAYERS[2]}"><span>🧊</span><span>速冻食品</span></button>
-        </div>
-      </div>
-      <div class="fridge-divider"></div>
-      <div class="fridge-fridge">
-        <div class="fr-fr-head"><span>❄️ 冷藏室</span><span>2~6℃</span></div>
-        <div class="fr-fr-body">${layers}</div>
-      </div>
-      <div class="fridge-door">
-        <div class="fr-door-label">门架储物</div>
-        ${doorRacks}
-        <div class="fr-door-handle"></div>
-      </div>
-    </div>`;
-  }
-
-  // 点击某一层后的详情弹窗
-  function screenLayerModal() {
-    const layer = STATE.selectedLayer;
-    const items = ITEMS.filter(i => i.layer === layer);
-    const idx = LAYERS.indexOf(layer);
-    const temp = ['冷藏保鲜 · 2~6℃', '冷藏保鲜 · 2~6℃', '冷藏保鲜 · 0~4℃', '果蔬保湿 · 4~8℃'][idx];
-    return `<div class="screen-modal" data-action="screen-close-modal">
-      <div class="screen-modal-card layer-detail" data-stop="1">
-        <div class="ld-head">
-          <div class="ld-icon">${['❄️','🧊','🫧','🥬'][idx]}</div>
-          <div class="ld-title"><h4>${esc(layer)}</h4><p>${temp} · 共 ${items.length} 件食材</p></div>
-          <button class="ld-close" data-action="close-layer" aria-label="关闭">✕</button>
-        </div>
-        <div class="ld-list">
-          ${items.map(i => `<div class="ld-row ${i.freshness}">
-            <span class="ld-emoji">${i.icon}</span>
-            <div class="ld-info">
-              <div class="ld-name">${esc(i.name)} <span class="pill-tag ${i.freshness}">${FRESHNESS[i.freshness].label}</span></div>
-              <div class="ld-meta">${esc(i.purchaseDate)} 购买 · 保质至 ${esc(i.expiryDate)} · ${i.quantity}${esc(i.unit)}</div>
-              <div class="ld-bar"><span style="width:${i.freshPct}%;background:${FRESHNESS[i.freshness].color}"></span></div>
-            </div>
-            <div class="ld-days ${i.freshness}"><b>${i.remainingDays}</b><small>天</small></div>
-          </div>`).join('')}
-        </div>
-        <div class="ld-foot">剩余天数与新鲜度由屏幕端同源给出，App 端不重算</div>
-      </div>
-    </div>`;
-  }
-
-  function screenExpiryModal() {
-    const y1 = ITEMS.filter(i => i.remainingDays === 1);
-    const y2 = ITEMS.filter(i => i.remainingDays === 2);
-    return `<div class="screen-modal" data-action="screen-close-modal">
-      <div class="screen-modal-card" data-stop="1">
-        <div class="screen-modal-top">
-          <div class="screen-modal-icon">⏰</div>
-          <div><h4>临期食材提醒</h4><p>请优先食用以下食材</p></div>
-        </div>
-        <div class="expiry-list">
-          ${y1.map(i => row(i, 'y1', '临期 1 天')).join('')}
-          ${y2.map(i => row(i, 'y2', '临期 2 天')).join('')}
-        </div>
-        <div class="screen-modal-actions">
-          <button class="sm-ghost" data-action="screen-modal-later">稍后提醒</button>
-          <button class="sm-primary" data-action="screen-modal-ok">查看食谱推荐</button>
-        </div>
-      </div></div>`;
-    function row(i, cls, label) {
-      return `<div class="expiry-row"><span>${i.icon}</span><span style="font-size:11px;flex:1">${esc(i.name)} · ${i.quantity}${esc(i.unit)}</span><span class="pill ${cls}">${label}</span></div>`;
-    }
-  }
-
-  function screenPairing() {
-    const steps = [
-      { icon: '🔌', title: '设备开机', desc: '长按冰箱屏幕电源键 3 秒，屏幕亮起后点击「开始配对」。' },
-      { icon: '📶', title: 'Wi-Fi 配网', desc: '用手机扫描屏幕二维码，连接「鲜知」配网热点，输入家庭 Wi-Fi 密码。' },
-      { icon: '📱', title: 'NFC 绑定', desc: '打开鲜知 App，用手机背部靠近屏幕右下角 NFC 感应区完成绑定。' },
-      { icon: '✅', title: '层分区初始化', desc: '默认四层固定：冷藏室上层 / 中层 / 下层 / 果蔬抽屉。配置完成！' }
-    ];
-    const s = steps[STATE.pairingStep];
-    return `<div class="pair-wrap">
-      <div class="pair-progress">${LAYERS.map((_, i) => `<span class="${i <= STATE.pairingStep ? 'on' : ''}"></span>`).join('')}</div>
-      <div class="pair-body">
-        <div class="pair-icon">${s.icon}</div>
-        <h3>步骤 ${STATE.pairingStep + 1} / 4 · ${s.title}</h3>
-        <p>${s.desc}</p>
-        ${STATE.pairingStep === 1 ? `<div class="qr-box">${qrSvg()}</div>` : ''}
-        ${STATE.pairingStep === 2 ? `<div style="font-size:11px;color:#7BE3A3;margin-top:6px">● 等待手机碰一碰…</div>` : ''}
-        ${STATE.pairingStep === 3 ? `<div style="font-size:11px;color:#7BE3A3;margin-top:6px">四层已就绪，正在同步食材数据…</div>` : ''}
-      </div>
-      <div class="pair-foot">
-        <button class="chip" data-action="pair-prev" ${STATE.pairingStep === 0 ? 'disabled style="opacity:.4"' : ''}>上一步</button>
-        <button class="chip active" data-action="pair-next">${STATE.pairingStep === 3 ? '完成配对' : '下一步'}</button>
-      </div>
-    </div>`;
-  }
-
-  function screenNfc() {
-    return `<div class="pair-wrap">
-      <div class="pair-body">
-        <div class="pair-icon" style="animation:pulse 2s infinite">📡</div>
-        <h3>NFC 感应区已就绪</h3>
-        <p>将手机靠近屏幕右下角感应区，可拉起「碰一碰结果页」：补货清单 + 今日食谱，数据与屏幕端同源。</p>
-        <button class="chip active" data-action="simulate-nfc" style="margin-top:8px;padding:10px 22px">模拟手机碰一碰 →</button>
-      </div>
-      <div class="nfc-zone" style="position:static;margin:0 auto 8px">NFC<br>感应区</div>
-      <div class="pair-foot">已绑定设备：${esc(STATE.device.name)}</div>
-    </div>`;
-  }
-
-  function qrSvg() {
-    const cells = [[0,0],[1,0],[2,0],[3,0],[4,0],[0,1],[4,1],[0,2],[2,2],[4,2],[0,3],[1,3],[3,3],[4,3],[0,4],[1,4],[2,4],[3,4],[4,4]];
-    const r = cells.map(([x,y]) => `<rect x="${6+x*21}" y="${6+y*21}" width="19" height="19" rx="2" fill="#163D28"/>`).join('');
-    return `<svg viewBox="0 0 117 117" xmlns="http://www.w3.org/2000/svg"><rect width="117" height="117" fill="#fff"/>${r}</svg>`;
-  }
-
   /* ==================== 手机 App ==================== */
   const TABS = [
     { key: 'home', icon: '🏠', label: '首页' },
@@ -240,14 +27,10 @@
   ];
 
   function renderApp() {
-    $('#app-page-badge').textContent = ({
-      nfc: 'NFC 结果', home: '首页', recipes: '食谱', recipe: '食谱详情',
-      restock: '补货清单', product: '商品详情', cart: '购物车', device: '设备管理'
-    })[STATE.appPage] || '首页';
-
     const page = STATE.appPage;
     if (page === 'nfc') appEl.innerHTML = pageNfc();
     else if (page === 'home') appEl.innerHTML = pageHome();
+    else if (page === 'fridge') appEl.innerHTML = pageFridge();
     else if (page === 'recipes') appEl.innerHTML = pageRecipes();
     else if (page === 'recipe') appEl.innerHTML = pageRecipe();
     else if (page === 'restock') appEl.innerHTML = pageRestock();
@@ -255,7 +38,6 @@
     else if (page === 'cart') appEl.innerHTML = pageCart();
     else if (page === 'device') appEl.innerHTML = pageDevice();
 
-    // tabbar
     const active = (page === 'recipe') ? 'recipes' : (page === 'product' || page === 'cart') ? 'restock' : page;
     tabEl.innerHTML = TABS.map(t => `<button class="tab ${active === t.key ? 'active' : ''}" data-tab="${t.key}"><span class="tab-ico">${t.icon}</span>${t.label}</button>`).join('');
     $$('[data-app-route]').forEach(b => b.classList.toggle('active', b.dataset.appRoute === page));
@@ -266,7 +48,7 @@
     return `<div class="nfc-hero">
         <div class="nfc-success">✓</div>
         <h2>碰一碰成功</h2>
-        <p>数据来自冰箱屏幕 · 与屏幕端同源，剩余天数未重算</p>
+        <p>数据来自冰箱食材库 · 与冰箱实时同源，剩余天数未重算</p>
       </div>
       <div class="result-card">
         <div class="result-card-head"><div class="rc-icon">📋</div><div><h4>补货清单</h4><p>${pending.length} 项待补货</p></div></div>
@@ -286,7 +68,7 @@
   function pageHome() {
     const y1 = ITEMS.filter(i => i.remainingDays === 1);
     const y2 = ITEMS.filter(i => i.remainingDays === 2);
-    const layerCards = LAYERS.map((layer, idx) => {
+    const layerCards = LAYERS.map((layer) => {
       const its = ITEMS.filter(i => i.layer === layer);
       return `<button class="layer-mini" data-action="app-open-layer" data-layer="${esc(layer)}">
         <div class="lm-top"><span class="lm-name">${esc(layer)}</span><span class="lm-count">${its.length} 件</span></div>
@@ -308,13 +90,51 @@
           </div>
         </div>
       </div>
-      <div class="sec-title">四层分区总览 <span class="more">层命名与屏幕端一致</span></div>
+      <div class="sec-title">四层分区总览 <span class="more">点击卡片查看食材</span></div>
       <div class="layer-summary">${layerCards}</div>
       <div class="sec-title">快速操作</div>
       <div class="row" style="gap:10px">
-        <button class="btn btn-primary grow" data-go="recipes">🍳 看食谱</button>
+        <button class="btn btn-primary grow" data-go="fridge">🥬 冰箱食材库</button>
+        <button class="btn btn-ghost grow" data-go="recipes">🍳 看食谱</button>
+      </div>
+      <div class="row" style="gap:10px;margin-top:8px">
         <button class="btn btn-ghost grow" data-go="restock">📋 补货清单</button>
+        <button class="btn btn-ghost grow" data-go="device">⚙️ 设备管理</button>
       </div>`;
+  }
+
+  // 手机端冰箱食材库：下单同步后可直接查看新入库食材
+  function pageFridge() {
+    const urgent = ITEMS.filter(i => i.remainingDays <= 2).length;
+    const layers = LAYERS.map((layer, idx) => {
+      const its = ITEMS.filter(i => i.layer === layer);
+      const temp = ['冷藏保鲜 · 2~6℃', '冷藏保鲜 · 2~6℃', '冷藏保鲜 · 0~4℃', '果蔬保湿 · 4~8℃'][idx];
+      const warn = its.some(i => i.remainingDays <= 2);
+      return `<div class="fd-layer">
+        <div class="fd-layer-head"><h4>${['❄️','🧊','🫧','🥬'][idx]} ${esc(layer)}</h4><span class="fd-temp">${temp} · ${its.length} 件</span></div>
+        <div class="fd-list">
+          ${its.map(i => `<div class="fd-item ${i.freshness}">
+            <span class="fd-emoji">${i.icon}</span>
+            <div class="fd-info">
+              <div class="fd-name">${esc(i.name)} <span class="pill-tag ${i.freshness}">${FRESHNESS[i.freshness].label}</span></div>
+              <div class="fd-meta">${esc(i.purchaseDate)} 购买 · 保质至 ${esc(i.expiryDate)} · ${i.quantity}${esc(i.unit)}</div>
+            </div>
+            <div class="fd-days ${i.freshness}"><b>${i.remainingDays}</b><small>天</small></div>
+          </div>`).join('') || '<div class="muted" style="padding:8px">该层暂无食材</div>'}
+        </div>
+      </div>`;
+    }).join('');
+    return `<div class="fridge-hero">
+        <h2>🥬 冰箱食材库</h2>
+        <p>共 ${ITEMS.length} 件食材 · ${urgent} 件需关注 · 手机下单后自动同步入库</p>
+      </div>
+      <div class="temp-banner">
+        <span class="temp-chip"><i style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:4px"></i>绿 = 新鲜</span>
+        <span class="temp-chip"><i style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--yellow);margin-right:4px"></i>黄 = 临期 2 天</span>
+        <span class="temp-chip warn"><i style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--red);margin-right:4px"></i>红 = 临期 1 天 / 过期</span>
+      </div>
+      ${layers}
+      <div class="al-foot">剩余天数与新鲜度由冰箱食材库同源给出，App 端不重算</div>`;
   }
 
   function pageRecipes() {
@@ -354,7 +174,7 @@
   function pageRestock() {
     const list = STATE.restock;
     const selected = list.filter(r => STATE.checked.has(r.id));
-    return `<div class="app-hero"><h2>补货清单</h2><p>与冰箱屏幕双向同步 · 手机可编辑</p></div>
+    return `<div class="app-hero"><h2>补货清单</h2><p>与冰箱食材库双向同步 · 手机可编辑</p></div>
       <div class="row" style="margin-bottom:12px;gap:6px;flex-wrap:wrap">
         <span class="pill-tag gray">来源：临期自动 / 手动 / 食谱缺料</span>
         <span class="pill-tag gray" style="margin-left:auto">${list.filter(r=>r.status==='待补').length} 项待补</span>
@@ -435,7 +255,7 @@
         </div>
       </div>
       <div class="setting-row"><span class="sr-ico">📶</span><div><div class="sr-title">Wi-Fi 连接</div><div class="sr-sub">${esc(d.wifi)} · 已配网</div></div><button class="mini-btn" data-action="go-pairing">重新配网</button></div>
-      <div class="setting-row"><span class="sr-ico">📡</span><div><div class="sr-title">NFC 绑定</div><div class="sr-sub">${d.nfcBound ? '已绑定 · 碰一碰可用' : '未绑定 · 请靠近屏幕感应区'}</div></div><div class="switch ${d.nfcBound ? 'on' : ''}" data-action="toggle-nfc"></div></div>
+      <div class="setting-row"><span class="sr-ico">📡</span><div><div class="sr-title">NFC 绑定</div><div class="sr-sub">${d.nfcBound ? '已绑定 · 碰一碰可用' : '未绑定 · 请靠近冰箱感应区'}</div></div><div class="switch ${d.nfcBound ? 'on' : ''}" data-action="toggle-nfc"></div></div>
       <div class="setting-row"><span class="sr-ico">⚙️</span><div><div class="sr-title">固件版本</div><div class="sr-sub">${esc(d.firmware)} · ${d.firmwareLatest ? '已是最新版本' : '有可用更新'}</div></div><span class="pill-tag green">P0 只读</span></div>
       <div class="setting-row"><span class="sr-ico">🔄</span><div><div class="sr-title">层分区设置</div><div class="sr-sub">固定四层：上层 / 中层 / 下层 / 果蔬抽屉</div></div><span class="pill-tag gray">固定</span></div>
       <button class="btn btn-ghost btn-block" data-action="simulate-nfc" style="margin-top:12px">📲 模拟 NFC 碰一碰</button>`;
@@ -459,7 +279,7 @@
       <div class="modal-card" data-stop="1">
         <div class="modal-head">
           <div class="modal-icon">🥬</div>
-          <div><h3>冰箱里还有这个食材</h3><p>重复购买提醒 · 与屏幕端同源数据</p></div>
+          <div><h3>冰箱里还有这个食材</h3><p>重复购买提醒 · 与冰箱食材库同源</p></div>
         </div>
         <div class="dup-detail">
           检测到你已购买过「<b>${esc(dup.name)}</b>」，冰箱中仍有 <b>${i.quantity}${esc(i.unit)}</b>，
@@ -488,7 +308,6 @@
       if (!newItem) return;
       const existing = ITEMS.find(i => i.name === newItem.name);
       if (existing) {
-        // 同名食材已在冰箱：数量累加并刷新为新鲜（同源数据更新）
         existing.quantity += newItem.quantity;
         existing.purchaseDate = newItem.purchaseDate;
         existing.expiryDate = newItem.expiryDate;
@@ -509,7 +328,7 @@
       });
     });
     STATE.cart = [];
-    renderScreen(); renderApp();
+    renderApp();
     showCheckoutModal(synced, filled);
   }
 
@@ -530,10 +349,10 @@
             <span class="ck-days">${i.remainingDays}天</span>
           </div>`).join('')}
         </div>
-        <div class="ck-tip">🔄 手机 App 与冰箱屏幕数据已同步，剩余天数由屏幕端同源给出</div>
+        <div class="ck-tip">🔄 下单数据与冰箱食材库实时同步，剩余天数由冰箱端同源给出</div>
         ${filled && filled.length ? `<div class="ck-tip ck-tip-done">✅ 补货清单已自动移除 ${filled.length} 项已补齐食材：${filled.map(n => esc(n)).join('、')}</div>` : ''}
         <div class="ck-actions">
-          <button class="btn btn-primary grow" data-action="view-fridge">查看冰箱屏幕</button>
+          <button class="btn btn-primary grow" data-action="view-fridge">查看冰箱食材库</button>
           <button class="btn btn-ghost grow" data-action="close-checkout">继续购物</button>
         </div>
       </div>
@@ -541,7 +360,6 @@
   }
 
   /* ============ AI 智能配菜（食谱区） ============ */
-  // 从冰箱同源数据判断食材是否已有；临期食材优先消耗
   function aiAnalyzeRecipe(recipe) {
     const have = [], need = [];
     recipe.ingredients.forEach(ing => {
@@ -572,13 +390,12 @@
           <button class="ai-chip" data-action="ai-quick" data-q="豆腐蔬菜汤">🍲 豆腐蔬菜汤</button>
           <button class="ai-chip" data-action="ai-quick" data-q="我想吃鸡蛋">🥚 我想吃鸡蛋</button>
         </div>
-        <div class="ai-footnote">AI 基于冰箱同源数据（新鲜度 / 剩余天数）分析，不重算食材状态</div>
+        <div class="ai-footnote">AI 基于冰箱食材库数据（新鲜度 / 剩余天数）分析，不重算食材状态</div>
       </div>
     </div>`;
     setTimeout(() => { const el = $('#ai-input'); if (el) el.focus(); }, 50);
   }
 
-  // 根据输入匹配食谱；匹配不到时推荐一道最能消耗临期食材的
   function aiResolveRecipe(query) {
     const q = (query || '').trim();
     let hit = RECIPES.find(r => q && (r.name.includes(q) || q.includes(r.name)));
@@ -610,7 +427,7 @@
       <div class="modal-card ai-modal ai-result" data-stop="1">
         <div class="ai-modal-head">
           <span class="ai-orb">✦</span>
-          <div class="grow"><h3>AI 配菜结果</h3><p>${recommended ? '没找到对应菜名，为你推荐这道' : '根据冰箱同源数据分析完成'}</p></div>
+          <div class="grow"><h3>AI 配菜结果</h3><p>${recommended ? '没找到对应菜名，为你推荐这道' : '根据冰箱食材库数据分析完成'}</p></div>
           <button class="al-close" data-action="close-ai" aria-label="关闭">✕</button>
         </div>
         <div class="ai-dish"><span class="ai-dish-emoji">${recipe.emoji}</span><div><h4>${esc(recipe.name)}</h4><p>⏱ ${recipe.minutes} 分钟 · ${recipe.steps.length} 步完成</p></div></div>
@@ -626,7 +443,7 @@
     </div>`;
   }
 
-  // 手机端：点击「四层分区总览」的某一层，弹出该层食材详情（与屏幕端同源）
+  // 点击「四层分区总览」的某一层，弹出该层食材详情
   function showAppLayerModal(layer) {
     const items = ITEMS.filter(i => i.layer === layer);
     const idx = LAYERS.indexOf(layer);
@@ -649,7 +466,26 @@
             <div class="al-days ${i.freshness}"><b>${i.remainingDays}</b><small>天</small></div>
           </div>`).join('')}
         </div>
-        <div class="al-foot">剩余天数与新鲜度由屏幕端同源给出，App 端不重算</div>
+        <div class="al-foot">剩余天数与新鲜度由冰箱食材库同源给出，App 端不重算</div>
+      </div>
+    </div>`;
+  }
+
+  function showPairGuide() {
+    modalRoot.innerHTML = `<div class="modal-overlay" data-action="close-modal">
+      <div class="modal-card" data-stop="1">
+        <div class="modal-head">
+          <div class="modal-icon">📶</div>
+          <div class="grow"><h3>重新配网指引</h3><p>按以下步骤完成设备联网</p></div>
+          <button class="al-close" data-action="close-app-layer" aria-label="关闭">✕</button>
+        </div>
+        <div class="pair-guide">
+          <div class="pg-step"><span class="pg-num">1</span><span>长按冰箱屏幕电源键 3 秒，屏幕亮起后进入配网。</span></div>
+          <div class="pg-step"><span class="pg-num">2</span><span>用手机扫描屏幕二维码，连接「鲜知」配网热点，输入家庭 Wi-Fi 密码。</span></div>
+          <div class="pg-step"><span class="pg-num">3</span><span>用手机背部靠近冰箱右下角 NFC 感应区，完成设备绑定。</span></div>
+          <div class="pg-step"><span class="pg-num">4</span><span>四层分区（上层 / 中层 / 下层 / 果蔬抽屉）初始化完成。</span></div>
+        </div>
+        <div class="modal-actions"><button class="btn btn-primary btn-block" data-action="close-app-layer">知道了</button></div>
       </div>
     </div>`;
   }
@@ -673,39 +509,18 @@
 
   /* ==================== 事件绑定 ==================== */
   document.addEventListener('click', (e) => {
-    const stop = e.target.closest('[data-stop]');
     const actionEl = e.target.closest('[data-action]');
 
     if (actionEl) {
       const a = actionEl.dataset.action;
-      if (a === 'close-modal' || a === 'screen-close-modal') {
+      if (a === 'close-modal') {
         if (e.target.closest('[data-stop]')) return;
-        if (a === 'screen-close-modal') { STATE.screenView = 'main'; renderScreen(); }
-        else closeModal();
-        return;
-      }
-      if (a === 'screen-modal-later' || a === 'screen-modal-ok') {
-        STATE.expiryPopupDismissed = true;
-        STATE.screenView = 'main';
-        if (a === 'screen-modal-ok') { STATE.appPage = 'recipes'; renderApp(); }
-        renderScreen(); toast(a === 'screen-modal-ok' ? '已为你打开食谱推荐' : '稍后将再次提醒'); return;
-      }
-      if (a === 'open-layer') {
-        STATE.selectedLayer = actionEl.dataset.layer;
-        STATE.screenView = 'layer';
-        renderScreen(); return;
-      }
-      if (a === 'app-open-layer') {
-        showAppLayerModal(actionEl.dataset.layer); return;
-      }
-      if (a === 'close-app-layer' || a === 'close-ai' || a === 'close-checkout') {
         closeModal(); return;
       }
+      if (a === 'app-open-layer') { showAppLayerModal(actionEl.dataset.layer); return; }
+      if (a === 'close-app-layer' || a === 'close-ai' || a === 'close-checkout') { closeModal(); return; }
       if (a === 'checkout') { doCheckout(); return; }
-      if (a === 'view-fridge') {
-        closeModal(); STATE.screenView = 'main'; renderScreen();
-        toast('已在冰箱屏幕端同步显示新入库食材'); return;
-      }
+      if (a === 'view-fridge') { closeModal(); STATE.appPage = 'fridge'; renderApp(); toast('已为你打开冰箱食材库，新食材已入库'); return; }
       if (a === 'ai-open') { showAiModal(); return; }
       if (a === 'ai-quick') { renderAiResult(actionEl.dataset.q); return; }
       if (a === 'ai-submit') {
@@ -725,20 +540,11 @@
         toast(added ? ('已把 ' + added + ' 样食材加入补货清单') : '所需食材已在补货清单中');
         return;
       }
-      if (a === 'close-layer') {
-        STATE.screenView = 'main'; renderScreen(); return;
-      }
-      if (a === 'pair-next') {
-        if (STATE.pairingStep < 3) STATE.pairingStep++;
-        else { STATE.device.nfcBound = true; toast('配对完成，设备已绑定'); STATE.screenView = 'main'; }
-        renderScreen(); return;
-      }
-      if (a === 'pair-prev') { if (STATE.pairingStep > 0) STATE.pairingStep--; renderScreen(); return; }
       if (a === 'simulate-nfc') {
         STATE.appPage = 'nfc'; renderApp();
         toast('NFC 碰一碰成功，已拉起结果页'); return;
       }
-      if (a === 'go-pairing') { STATE.screenView = 'pairing'; STATE.pairingStep = 0; renderScreen(); toast('请在屏幕端完成配对流程'); return; }
+      if (a === 'go-pairing') { showPairGuide(); return; }
       if (a === 'toggle-nfc') { STATE.device.nfcBound = !STATE.device.nfcBound; renderApp(); toast(STATE.device.nfcBound ? 'NFC 绑定成功' : '已解绑 NFC'); return; }
       if (a === 'toggle-check') {
         const id = actionEl.dataset.id;
@@ -756,7 +562,7 @@
           if (!sku) return;
           const dup = checkDuplicate(sku);
           if (dup && dup.hit) dupQueue.push({ sku, rid: r.id });
-          else { addToCart(sku, r.id); STATE.checked.delete(id); } // 黄/红不提醒，直接加购
+          else { addToCart(sku, r.id); STATE.checked.delete(id); }
         });
         processDupQueue(); return;
       }
@@ -790,12 +596,6 @@
       if (a === 'batch-remove') { toast('批量移除重复项将在二期开放'); return; }
     }
 
-    const screenViewBtn = e.target.closest('[data-screen-view]');
-    if (screenViewBtn) {
-      STATE.screenView = screenViewBtn.dataset.screenView;
-      if (STATE.screenView === 'expiry') STATE.expiryPopupDismissed = false;
-      renderScreen(); return;
-    }
     const appRouteBtn = e.target.closest('[data-app-route]');
     if (appRouteBtn) { STATE.appPage = appRouteBtn.dataset.appRoute; renderApp(); return; }
     const tabBtn = e.target.closest('[data-tab]');
@@ -822,13 +622,9 @@
   $('#btn-reset').addEventListener('click', () => {
     STATE.restock = RESTOCK_ITEMS.map(x => ({ ...x }));
     STATE.cart = []; STATE.checked = new Set(); STATE.device = { ...DEVICE };
-    STATE.screenView = 'main'; STATE.pairingStep = 0; STATE.appPage = 'home';
-    STATE.expiryPopupDismissed = false;
-    renderScreen(); renderApp(); toast('演示数据已重置');
+    STATE.appPage = 'home';
+    renderApp(); toast('演示数据已重置');
   });
 
-  $('#footer-time').textContent = '同源参考日 ' + TODAY + ' · 剩余天数由屏幕端预置，App 端不重算';
-
-  renderScreen();
   renderApp();
 })();

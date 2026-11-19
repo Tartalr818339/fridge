@@ -116,19 +116,15 @@ function purchaseToItem(sku) {
   };
 }
 
-/* ---------- 共享状态（模拟双端实时同步） ---------- */
+/* ---------- 手机 App 状态 ---------- */
 const STATE = {
-  screenView: 'main',      // main | pairing | expiry | nfc | layer
-  selectedLayer: LAYERS[0], // 当前点击查看的层
-  pairingStep: 0,          // 0 开机 1 Wi-Fi 2 NFC 3 完成
-  appPage: 'home',         // nfc | home | recipe | restock | product | cart | device
+  appPage: 'home',         // nfc | home | fridge | recipes | recipe | restock | product | cart | device
   recipeId: 'rc-01',
   productSku: null,
   restock: RESTOCK_ITEMS.map(x => ({ ...x })),
   cart: [],                // { sku, name, qty, fromRestockId }
   checked: new Set(),      // 补货清单勾选状态
-  device: { ...DEVICE },
-  expiryPopupDismissed: false
+  device: { ...DEVICE }
 };
 
 /* ---------- 同源校验：重复购买判定 ---------- */
