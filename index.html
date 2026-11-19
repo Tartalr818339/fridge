@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>鲜知 FreshSense · 双端交互原型</title>
+  <link rel="stylesheet" href="./styles.css?v=17" />
+</head>
+<body>
+  <div class="prototype-shell">
+    <header class="proto-header">
+      <div class="brand">
+        <div class="brand-mark"><img src="./assets/logo.svg?v=5" alt="鲜知 logo" /></div>
+        <div class="brand-text">
+          <h1>鲜知 FreshSense</h1>
+          <p>冰箱新鲜度管理 · P0 交互原型</p>
+        </div>
+      </div>
+      <div class="header-tools">
+        <span class="sync-pill"><span class="sync-dot"></span>同源数据已同步</span>
+        <button class="btn btn-ghost" id="btn-reset">重置演示</button>
+      </div>
+    </header>
+
+    <div class="workspace">
+      <section class="device-panel" aria-label="冰箱屏幕端">
+        <div class="panel-head">
+          <div>
+            <h2>冰箱屏幕端</h2>
+            <p>层分区 · 新鲜度 · 临期弹窗 · NFC</p>
+          </div>
+          <span class="badge" id="screen-mode-badge">主界面</span>
+        </div>
+        <div class="screen-frame" id="screen-frame">
+          <div class="screen-notch">FRESHSCREEN · 10.1"</div>
+          <div id="screen-content" class="screen-content"><!-- JS renders --></div>
+        </div>
+        <div class="panel-foot">
+          <button class="chip" data-screen-view="main">主界面</button>
+          <button class="chip" data-screen-view="pairing">配对流程</button>
+          <button class="chip" data-screen-view="expiry">临期弹窗</button>
+          <button class="chip" data-screen-view="nfc">NFC 感应区</button>
+        </div>
+      </section>
+
+      <section class="device-panel" aria-label="手机 App 端">
+        <div class="panel-head">
+          <div>
+            <h2>手机 App 端</h2>
+            <p>NFC 结果 · 概览 · 食谱 · 补货 · 重复购买提醒</p>
+          </div>
+          <span class="badge" id="app-page-badge">首页</span>
+        </div>
+        <div class="phone-frame">
+          <div class="phone-notch"></div>
+          <div class="phone-statusbar">
+            <span>9:41</span><span class="status-icons">● ▰ ▮</span>
+          </div>
+          <div id="app-content" class="app-content"><!-- JS renders --></div>
+          <div id="app-tabbar" class="app-tabbar"><!-- JS renders --></div>
+        </div>
+        <div class="panel-foot" id="app-quick-actions">
+          <button class="chip" data-app-route="nfc">NFC 结果</button>
+          <button class="chip" data-app-route="home">首页</button>
+          <button class="chip" data-app-route="recipes">食谱</button>
+          <button class="chip" data-app-route="restock">补货</button>
+          <button class="chip" data-app-route="device">设备</button>
+        </div>
+      </section>
+    </div>
+
+    <footer class="proto-footer">
+      <span>色语义：绿=新鲜 · 黄=临期 2 天 · 红=临期 1 天/过期　|　四层固定：冷藏室上层 / 中层 / 下层 / 果蔬抽屉</span>
+      <span id="footer-time"></span>
+    </footer>
+  </div>
+
+  <div id="modal-root"></div>
+  <div id="toast-root" class="toast-root"></div>
+
+  <script src="./data.js?v=17"></script>
+  <script src="./app.js?v=17"></script>
+</body>
+</html>
