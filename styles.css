@@ -332,7 +332,7 @@ h1,h2,h3,h4,h5{font-weight:700;letter-spacing:-.01em}
 .expiry-none{font-size:13px;color:#9A7100;padding:6px 0}
 
 /* ============ 朴朴超市跳转 ============ */
-.pupu-entry{background:linear-gradient(100deg,#E8F7EE,#F4FBF6);border:1px solid #BFE8CE;border-radius:14px;padding:13px;margin-bottom:12px;display:flex;align-items:center;gap:10px;width:100%;text-align:left}
+.pupu-entry{appearance:none;-webkit-appearance:none;background:linear-gradient(100deg,#E8F7EE,#F4FBF6);border:1px solid #BFE8CE;border-radius:14px;padding:13px;margin:0 0 12px;display:flex;align-items:center;gap:10px;width:100%;max-width:100%;box-sizing:border-box;text-align:left}
 .pupu-entry .pu-logo{width:42px;height:42px;border-radius:11px;background:linear-gradient(135deg,#3DBE6B,#0E7C3A);color:#fff;font-weight:800;font-size:18px;display:grid;place-items:center;flex:none}
 .pupu-entry .pu-txt{flex:1;min-width:0;display:block}
 .pupu-entry .pu-txt h4{font-size:13px;color:var(--green-deep);margin:0}

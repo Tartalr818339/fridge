@@ -189,7 +189,7 @@
     return `<div class="app-hero"><h2>补货清单</h2><p>与冰箱食材库双向同步 · 手机可编辑</p></div>
       <button class="pupu-entry" data-action="pupu-open">
         <span class="pu-logo">朴</span>
-        <span class="pu-txt"><h4>去朴朴超市采购</h4><p>一键打开朴朴，买完回来自动更新清单</p></span>
+        <span class="pu-txt"><h4>去朴朴超市采购</h4><p>买完自动更新清单</p></span>
         <span class="pu-go">前往 ›</span>
       </button>
       <div class="row" style="margin-bottom:12px;gap:6px;flex-wrap:wrap">
