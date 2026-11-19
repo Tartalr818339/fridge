@@ -315,6 +315,62 @@ h1,h2,h3,h4,h5{font-weight:700;letter-spacing:-.01em}
 [data-go].muted,[data-go].mini-btn,.ai-chip,.chip,.expire-chip{min-height:34px;display:inline-flex;align-items:center}
 .tab{min-height:44px;justify-content:center}
 
+/* ============ 卡片统一高度 ============ */
+.layer-summary{align-items:stretch}
+.layer-mini{height:186px;display:flex;flex-direction:column}
+.layer-mini .lm-tags{flex:1;min-height:0;overflow-y:auto;scrollbar-width:thin}
+.layer-mini .lm-tags::-webkit-scrollbar{width:4px}
+.layer-mini .lm-tags::-webkit-scrollbar-thumb{background:#D5E3DA;border-radius:99px}
+.layer-mini .lm-open{flex:none;margin-top:auto;padding-top:6px}
+
+/* ============ 临期天数筛选条 ============ */
+.expiry-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+.expiry-tab{min-width:38px;padding:5px 8px;border-radius:8px;background:rgba(255,255,255,.7);color:#8A6600;font-size:13px;font-weight:700;display:flex;align-items:center;gap:3px}
+.expiry-tab.active{background:#8A6600;color:#fff}
+.expiry-tab i{font-style:normal;font-size:11px;opacity:.85}
+.expiry-list-mini{margin-top:9px;display:flex;flex-direction:column;gap:5px}
+.expiry-mini-row{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.75);border-radius:8px;padding:6px 8px;font-size:13px;color:#6B5200}
+.expiry-mini-row .em-ico{font-size:16px}
+.expiry-mini-row .em-name{flex:1;font-weight:600}
+.expiry-mini-row .em-meta{font-size:13px;opacity:.8}
+.expiry-none{font-size:13px;color:#9A7100;padding:6px 0}
+
+/* ============ 朴朴超市跳转 ============ */
+.pupu-entry{background:linear-gradient(100deg,#E8F7EE,#F4FBF6);border:1px solid #BFE8CE;border-radius:14px;padding:13px;margin-bottom:12px;display:flex;align-items:center;gap:10px}
+.pupu-entry .pu-logo{width:42px;height:42px;border-radius:11px;background:linear-gradient(135deg,#3DBE6B,#0E7C3A);color:#fff;font-weight:800;font-size:18px;display:grid;place-items:center;flex:none}
+.pupu-entry .pu-txt{flex:1}
+.pupu-entry .pu-txt h4{font-size:13px;color:var(--green-deep)}
+.pupu-entry .pu-txt p{font-size:13px;color:var(--ink-2);margin-top:2px}
+.pupu-entry .pu-go{font-size:13px;color:var(--green-deep);font-weight:700;white-space:nowrap}
+.pupu-tip{font-size:13px;color:var(--ink-2);background:#FFF6DA;border:1px solid #F6E3A6;border-radius:10px;padding:9px 11px;margin-bottom:12px;line-height:1.5}
+
+/* ============ 食材库添加入口 ============ */
+.add-entry{width:100%;border:1.5px dashed var(--green);background:var(--green-soft);color:var(--green-deep);border-radius:13px;padding:13px;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:7px;margin-bottom:14px}
+
+/* ============ 添加食材弹窗 ============ */
+.add-tabs{display:flex;gap:6px;margin-bottom:14px}
+.add-tab{flex:1;padding:9px 4px;border-radius:10px;background:var(--paper);font-size:13px;font-weight:700;color:var(--ink-2)}
+.add-tab.active{background:var(--green);color:#fff}
+.add-field{margin-bottom:11px}
+.add-field label{display:block;font-size:13px;font-weight:600;margin-bottom:5px;color:var(--ink-2)}
+.add-field input,.add-field select{width:100%;border:1px solid var(--line);border-radius:11px;padding:11px 12px;font-size:13px;background:#fff;color:var(--ink);outline:none}
+.add-field input:focus,.add-field select:focus{border-color:var(--green)}
+.add-row{display:flex;gap:8px}
+.add-row .add-field{flex:1}
+.add-voice{text-align:center;padding:14px 0}
+.add-voice .av-orb{width:72px;height:72px;border-radius:50%;background:linear-gradient(145deg,#B9F5D0,#6EE7A0);color:#0E7C3A;font-size:30px;display:grid;place-items:center;margin:0 auto 12px;box-shadow:0 6px 18px rgba(110,231,160,.35)}
+.add-voice .av-orb.on{animation:pulse 1.2s infinite}
+.add-voice p{font-size:13px;color:var(--ink-2);line-height:1.6}
+.add-voice .av-result{margin-top:12px;background:var(--green-soft);border-radius:10px;padding:10px;font-size:13px;color:var(--green-deep);text-align:left;display:none}
+.add-camera{border:1.5px dashed var(--line);border-radius:13px;padding:22px 14px;text-align:center;background:var(--paper)}
+.add-camera input{display:none}
+.add-camera .ac-orb{font-size:38px}
+.add-camera p{font-size:13px;color:var(--muted);margin-top:8px}
+.add-preview{margin-top:10px;max-height:150px;overflow-y:auto;display:none}
+.add-preview .ap-row{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:9px;padding:8px 10px;margin-bottom:6px;font-size:13px}
+.add-preview .ap-row b{margin-left:auto;color:var(--green-deep)}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(29,185,84,.3)}50%{box-shadow:0 0 0 12px rgba(29,185,84,0)}}
+
 /* ============ 响应式：真机全屏 ============ */
 @media(max-width:520px){
   body{padding:0;gap:0;background:#F7FAF8;justify-content:flex-start}

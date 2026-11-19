@@ -32,6 +32,8 @@ const ITEMS = [
   { id: 'it-16', name: '橙汁', icon: '🧃', layer: '冷藏室上层', purchaseDate: '2025-06-04', expiryDate: '2025-06-13', remainingDays: 7, freshness: 'green', freshPct: 82, quantity: 1, unit: '瓶', source: '手动录入' }
 ];
 
+const ITEMS_INITIAL = ITEMS.map(x => ({ ...x }));
+
 const RESTOCK_ITEMS = [
   { id: 'rs-01', name: '鲜鸡蛋', suggestQty: 6, unit: '枚', source: '手动', status: '待补' },
   { id: 'rs-02', name: '全脂牛奶', suggestQty: 1, unit: '盒', source: '临期自动', status: '待补' },
@@ -59,6 +61,26 @@ const RECIPES = [
     ],
     expiring: ['番茄'],
     steps: ['食材切块备用。', '水开下豆腐与蔬菜。', '小火煮 8 分钟，加盐调味。'] }
+];
+
+// AI 智能配菜菜品库：含菜名、常见食材（用于匹配「想吃什么」）、分类标签
+// 每条记录用 tags 做语义匹配，ingredients 为「应有食材」，AI 再与冰箱库存比对
+const AI_DISHES = [
+  { name: '番茄炒蛋', emoji: '🍳', minutes: 15, tags: ['番茄', '鸡蛋', '蛋', '西红柿', '家常'], ingredients: ['鲜鸡蛋', '番茄', '葱'] },
+  { name: '香煎三文鱼', emoji: '🐟', minutes: 20, tags: ['三文鱼', '鱼', '海鲜', '煎'], ingredients: ['三文鱼', '西兰花', '柠檬'] },
+  { name: '豆腐蔬菜汤', emoji: '🍲', minutes: 12, tags: ['豆腐', '汤', '蔬菜', '清淡'], ingredients: ['豆腐', '番茄', '西兰花'] },
+  { name: '青椒土豆丝', emoji: '🥔', minutes: 12, tags: ['土豆', '青椒', '素菜', '家常'], ingredients: ['土豆', '青椒', '胡萝卜'] },
+  { name: '可乐鸡翅', emoji: '🍗', minutes: 25, tags: ['鸡翅', '鸡肉', '鸡', '可乐', '荤'], ingredients: ['鸡翅', '可乐', '姜'] },
+  { name: '蒜蓉西兰花', emoji: '🥦', minutes: 10, tags: ['西兰花', '花椰菜', '素菜', '蒜'], ingredients: ['西兰花', '蒜'] },
+  { name: '牛奶炖蛋', emoji: '🥛', minutes: 18, tags: ['牛奶', '蛋', '甜品', '布丁'], ingredients: ['全脂牛奶', '鲜鸡蛋', '糖'] },
+  { name: '酸奶水果杯', emoji: '🥣', minutes: 5, tags: ['酸奶', '水果', '甜品', '蓝莓', '早餐'], ingredients: ['原味酸奶', '红苹果', '蓝莓'] },
+  { name: '胡萝卜炒蛋', emoji: '🥕', minutes: 12, tags: ['胡萝卜', '蛋', '鸡蛋', '家常'], ingredients: ['胡萝卜', '鲜鸡蛋', '葱'] },
+  { name: '鸡蛋三明治', emoji: '🥪', minutes: 10, tags: ['吐司', '面包', '鸡蛋', '早餐', '三明治'], ingredients: ['吐司面包', '鲜鸡蛋', '生菜', '奶酪'] },
+  { name: '香肠煎蛋', emoji: '🌭', minutes: 10, tags: ['香肠', '蛋', '鸡蛋', '早餐', '快手'], ingredients: ['香肠', '鲜鸡蛋'] },
+  { name: '清炒时蔬', emoji: '🥬', minutes: 8, tags: ['生菜', '青菜', '蔬菜', '清淡', '素菜'], ingredients: ['生菜', '胡萝卜'] },
+  { name: '橙汁奶昔', emoji: '🧃', minutes: 5, tags: ['橙汁', '奶昔', '饮品', '酸奶'], ingredients: ['橙汁', '原味酸奶'] },
+  { name: '香煎鸡胸肉', emoji: '🍖', minutes: 20, tags: ['鸡胸肉', '鸡肉', '鸡', '健身', '减脂'], ingredients: ['鸡胸肉', '生菜', '柠檬'] },
+  { name: '蓝莓酸奶奶昔', emoji: '🫐', minutes: 5, tags: ['蓝莓', '酸奶', '饮品', '甜品'], ingredients: ['蓝莓', '原味酸奶'] }
 ];
 
 const DEVICE = {
@@ -124,8 +146,28 @@ const STATE = {
   restock: RESTOCK_ITEMS.map(x => ({ ...x })),
   cart: [],                // { sku, name, qty, fromRestockId }
   checked: new Set(),      // 补货清单勾选状态
-  device: { ...DEVICE }
+  device: { ...DEVICE },
+  expiryDay: 1,            // 临期提醒当前选中的天数（1~7）
+  aiDish: null             // AI 智能配菜当前分析出的菜品
 };
+
+/* ---------- 手动/语音/拍照 添加食材：名称 → 图标/默认层 ---------- */
+function iconForFood(name) {
+  const map = {
+    '鸡蛋':'🥚','鲜鸡蛋':'🥚','牛奶':'🥛','全脂牛奶':'🥛','酸奶':'🥣','原味酸奶':'🥣',
+    '三文鱼':'🐟','鱼':'🐟','西兰花':'🥦','番茄':'🍅','西红柿':'🍅','面包':'🍞','吐司面包':'🍞',
+    '豆腐':'🧈','鸡胸肉':'🍗','鸡肉':'🍗','奶酪':'🧀','苹果':'🍎','红苹果':'🍎','胡萝卜':'🥕',
+    '生菜':'🥬','青菜':'🥬','香肠':'🌭','蓝莓':'🫐','橙汁':'🧃','柠檬':'🍋','土豆':'🥔','青椒':'🫑',
+    '蒜':'🧄','葱':'🌿','鸡翅':'🍗','可乐':'🥤','糖':'🍬','姜':'🫚','米饭':'🍚','燕麦':'🌾'
+  };
+  return map[name] || '🥗';
+}
+function defaultLayerForFood(name) {
+  if (/奶|酸奶|蛋|奶酪|吐司|面包|橙汁/.test(name)) return '冷藏室上层';
+  if (/鱼|肉|鸡|豆腐|香肠/.test(name)) return '冷藏室下层';
+  if (/番茄|苹果|胡萝卜|生菜|蓝莓|柠檬|西兰花|土豆|青椒|蒜|葱|姜/.test(name)) return '果蔬抽屉';
+  return '冷藏室中层';
+}
 
 /* ---------- 同源校验：重复购买判定 ---------- */
 // 命中：商品映射食材在冰箱存在，且新鲜度=绿，且剩余≥2天
