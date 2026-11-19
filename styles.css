@@ -50,9 +50,6 @@ h1,h2,h3,h4,h5{font-weight:700;letter-spacing:-.01em}
   box-shadow:0 24px 50px rgba(0,0,0,.22),inset 0 0 0 2px #2B3A31;
   overflow:hidden;display:flex;flex-direction:column;
 }
-.phone-notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:120px;height:24px;background:#16231C;border-radius:0 0 16px 16px;z-index:10}
-.phone-statusbar{height:38px;flex:none;display:flex;justify-content:space-between;align-items:flex-end;padding:0 22px 4px;font-size:13px;font-weight:700;color:var(--ink)}
-.status-icons{letter-spacing:2px;font-size:13px}
 .app-content{flex:1;overflow-y:auto;scrollbar-width:none;padding:14px 16px 90px;-webkit-overflow-scrolling:touch}
 .app-content::-webkit-scrollbar{display:none}
 .app-tabbar{position:absolute;bottom:0;left:0;right:0;height:70px;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);border-top:1px solid var(--line);display:flex;justify-content:space-around;align-items:center;padding-bottom:8px;z-index:8}
@@ -315,19 +312,19 @@ h1,h2,h3,h4,h5{font-weight:700;letter-spacing:-.01em}
 [data-go].muted,[data-go].mini-btn,.ai-chip,.chip,.expire-chip{min-height:34px;display:inline-flex;align-items:center}
 .tab{min-height:44px;justify-content:center}
 
-/* ============ 卡片统一高度 ============ */
+/* ============ 卡片统一高度（紧凑）＝========== */
 .layer-summary{align-items:stretch}
-.layer-mini{height:186px;display:flex;flex-direction:column}
-.layer-mini .lm-tags{flex:1;min-height:0;overflow-y:auto;scrollbar-width:thin}
-.layer-mini .lm-tags::-webkit-scrollbar{width:4px}
-.layer-mini .lm-tags::-webkit-scrollbar-thumb{background:#D5E3DA;border-radius:99px}
-.layer-mini .lm-open{flex:none;margin-top:auto;padding-top:6px}
+.layer-mini{height:132px;display:flex;flex-direction:column}
+.layer-mini .lm-tags{flex:1;min-height:0;overflow:hidden}
+.lm-more{font-size:13px;color:var(--muted);font-weight:700;padding-top:2px}
+.layer-mini .lm-open{flex:none;margin-top:auto;padding-top:4px}
 
 /* ============ 临期天数筛选条 ============ */
-.expiry-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
-.expiry-tab{min-width:38px;padding:5px 8px;border-radius:8px;background:rgba(255,255,255,.7);color:#8A6600;font-size:13px;font-weight:700;display:flex;align-items:center;gap:3px}
+.expiry-tabs{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}
+.expiry-tab{min-width:44px;padding:5px 7px 5px 9px;border-radius:9px;background:rgba(255,255,255,.7);color:#8A6600;font-size:13px;font-weight:700;display:flex;align-items:center;gap:5px}
 .expiry-tab.active{background:#8A6600;color:#fff}
-.expiry-tab i{font-style:normal;font-size:11px;opacity:.85}
+.expiry-tab i{font-style:normal;min-width:19px;height:19px;line-height:19px;text-align:center;font-size:12px;border-radius:50%;background:rgba(138,102,0,.14);color:#8A6600}
+.expiry-tab.active i{background:#fff;color:#8A6600}
 .expiry-list-mini{margin-top:9px;display:flex;flex-direction:column;gap:5px}
 .expiry-mini-row{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.75);border-radius:8px;padding:6px 8px;font-size:13px;color:#6B5200}
 .expiry-mini-row .em-ico{font-size:16px}
@@ -376,9 +373,8 @@ h1,h2,h3,h4,h5{font-weight:700;letter-spacing:-.01em}
   body{padding:0;gap:0;background:#F7FAF8;justify-content:flex-start}
   .app-stage{width:100%}
   .phone-frame{width:100vw;height:100dvh;border:none;border-radius:0;box-shadow:none}
-  .phone-notch{display:none}
-  .phone-statusbar{height:28px;padding:0 20px 2px}
-  .app-content{padding-top:8px}
+  .app-content{padding:calc(env(safe-area-inset-top, 0px) + 14px) 16px calc(env(safe-area-inset-bottom, 0px) + 90px)}
+  .app-tabbar{padding-bottom:calc(env(safe-area-inset-bottom, 0px) + 8px);height:calc(70px + env(safe-area-inset-bottom, 0px))}
   .app-outer-bar{display:none}
   .modal-overlay{padding:12px}
   .modal-card{max-width:100%;border-radius:18px;padding:18px}

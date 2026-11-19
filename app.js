@@ -74,9 +74,12 @@
     const dayItems = byDay(sel);
     const layerCards = LAYERS.map((layer) => {
       const its = ITEMS.filter(i => i.layer === layer);
+      const shown = its.slice(0, 3);
+      const more = its.length - shown.length;
       return `<button class="layer-mini" data-action="app-open-layer" data-layer="${esc(layer)}">
         <div class="lm-top"><span class="lm-name">${esc(layer)}</span><span class="lm-count">${its.length} 件</span></div>
-        <div class="lm-tags">${its.map(i => `<span class="lm-tag ${i.freshness}"><i></i><span>${esc(i.name)}</span><b>${i.remainingDays}天</b></span>`).join('') || '<span class="lm-tag none">暂无食材</span>'}</div>
+        <div class="lm-tags">${shown.map(i => `<span class="lm-tag ${i.freshness}"><i></i><span>${esc(i.name)}</span><b>${i.remainingDays}天</b></span>`).join('') || '<span class="lm-tag none">暂无食材</span>'}</div>
+        ${more > 0 ? `<span class="lm-more">+${more} 样，点开查看更多</span>` : ''}
         <span class="lm-open">查看食材 ›</span>
       </button>`;
     }).join('');
