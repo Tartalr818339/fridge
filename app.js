@@ -79,8 +79,7 @@
       return `<button class="layer-mini" data-action="app-open-layer" data-layer="${esc(layer)}">
         <div class="lm-top"><span class="lm-name">${esc(layer)}</span><span class="lm-count">${its.length} 件</span></div>
         <div class="lm-tags">${shown.map(i => `<span class="lm-tag ${i.freshness}"><i></i><span>${esc(i.name)}</span><b>${i.remainingDays}天</b></span>`).join('') || '<span class="lm-tag none">暂无食材</span>'}</div>
-        ${more > 0 ? `<span class="lm-more">+${more} 样，点开查看更多</span>` : ''}
-        <span class="lm-open">查看食材 ›</span>
+        <span class="lm-open">${more > 0 ? `查看全部 ${its.length} 样食材` : '查看食材'} ›</span>
       </button>`;
     }).join('');
     return `<div class="app-hero">

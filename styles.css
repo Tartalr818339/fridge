@@ -316,7 +316,6 @@ h1,h2,h3,h4,h5{font-weight:700;letter-spacing:-.01em}
 .layer-summary{align-items:stretch}
 .layer-mini{height:132px;display:flex;flex-direction:column}
 .layer-mini .lm-tags{flex:1;min-height:0;overflow:hidden}
-.lm-more{font-size:13px;color:var(--muted);font-weight:700;padding-top:2px}
 .layer-mini .lm-open{flex:none;margin-top:auto;padding-top:4px}
 
 /* ============ 临期天数筛选条 ============ */
