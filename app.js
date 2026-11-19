@@ -391,23 +391,28 @@
     return { recipe, have, need, expiringInRecipe };
   }
 
-  // 智能配菜引擎：用户说任意菜名 → 语义/关键词匹配菜品库 → 计算已有/需补食材
-  // 不再只依赖临期食材；匹配不到时按冰箱现有食材推荐「最适合做」的菜
+  // 智能配菜引擎：用户说任意菜名 → 优先菜名/标签整体匹配（不做单字拆分）→ 计算已有/需补食材
+  // 匹配不到时才按冰箱现有食材推荐「最适合做」的菜
   function aiResolveRecipe(query) {
-    const q = String(query || '').trim();
+    // 去掉口语前缀，避免「我想吃鱼」被「我想/吃」干扰而匹配错菜
+    const q = String(query || '').trim().replace(/^(我想吃|我想要|我想|想吃|来一份|来个|我要|吃|做)/, '').trim();
     const all = RECIPES.map(r => ({ ...r, ingredients: r.ingredients.map(x => x.name) }))
       .concat(AI_DISHES.map(d => ({ id: 'ai-' + d.name, name: d.name, emoji: d.emoji, minutes: d.minutes, tags: d.tags, ingredients: d.ingredients, steps: ['准备好所需食材。', '按家常做法烹饪调味。', '装盘即可享用。'] })));
 
     let hit = null, mode = 'exact';
     if (q) {
-      // 1) 菜名精确包含
-      hit = all.find(d => d.name === q) || all.find(d => d.name.includes(q) || q.includes(d.name));
-      // 2) 标签 / 关键词语义匹配
+      // 1) 菜名整体相等或互相包含（只在 2 字以上时判断包含，避免单字误命中）
+      hit = all.find(d => d.name === q);
+      if (!hit && q.length >= 2) hit = all.find(d => d.name.includes(q) || q.includes(d.name));
+      // 2) 标签整体匹配：一个标签词要么完整出现在输入里，要么输入完整出现在标签里
       if (!hit) {
         let best = 0;
         all.forEach(d => {
-          const score = (d.tags || []).reduce((s, t) => s + (q.includes(t) || t.includes(q) ? t.length : 0), 0)
-            + (q.split('').filter(ch => d.name.includes(ch)).length);
+          let score = 0;
+          (d.tags || []).forEach(t => {
+            if (t.length >= 2 && q.includes(t)) score += t.length * 2;
+            else if (t.includes(q)) score += q.length;
+          });
           if (score > best) { best = score; hit = d; }
         });
         if (hit) mode = 'keyword';
